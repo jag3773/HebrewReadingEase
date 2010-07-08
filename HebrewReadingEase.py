@@ -1,0 +1,171 @@
+#!/usr/bin/env python
+# -*- coding: utf8 -*-
+
+#Copyright (c) 2010 Jesse Griffin
+#http://creativecommons.org/licenses/MIT/
+#
+#Permission is hereby granted, free of charge, to any person obtaining a copy
+#of this software and associated documentation files (the "Software"), to deal
+#in the Software without restriction, including without limitation the rights
+#to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+#copies of the Software, and to permit persons to whom the Software is
+#furnished to do so, subject to the following conditions:
+#
+#The above copyright notice and this permission notice shall be included in
+#all copies or substantial portions of the Software.
+#
+#THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+#THE SOFTWARE.
+
+from string import punctuation
+from operator import itemgetter
+from xml.dom import minidom
+import os
+import sys
+
+class ReadingEase():
+    '''
+    This class accepts a Hebrew Bible reference (Gen.1.1) and 
+    returns the relative Reading Ease of the text.
+    '''
+
+    def __init__(self):
+        self.reference = sys.argv[1:]
+        self.bookdir = './wlc'
+        self.books = os.listdir(self.bookdir)
+        self.listdir = './lists'
+        self.biblefile = 'bible.txt'
+        self.biblefreqlistfile = 'bible-list.txt'
+        self.freqnotlist = 'notlist.txt'
+        self.readingeasefile = 'HebrewReadingEasebyBook.txt'
+        self.N = 40000
+
+    def createdictionary(self):
+        #print "Deleting old files..."
+        #try: os.remove(self.biblefile)
+        #except: pass
+        #try: os.remove(self.biblefreqlistfile)
+        #except: pass
+        #try: os.remove(self.freqnotlist)
+        #except: pass
+        if os.access(self.biblefreqlistfile, os.F_OK):
+            print "Loading Frequency Dictionary..."
+            mylist = '{' + open(self.biblefreqlistfile).read() + '}'
+            myformlist = mylist.replace('\n', ' ')
+            self.dictlist = eval(myformlist)
+        else:
+            print "Creating Frequency Dictionary..."
+            for book in self.books:
+                mybook = open(self.bookdir + '/' + book).read()
+                biblef = open(self.biblefile, 'a')
+                biblef.write(mybook)
+                biblef.close()
+            self.words = {}
+            self.words_gen = (word.strip(punctuation).lower() for line in open(self.biblefile)
+                                               for word in line.split())
+            for word in self.words_gen:
+                self.words[word] = self.words.get(word, 0) + 1
+            self.top_words = sorted(self.words.iteritems(), key=itemgetter(1), reverse=True)[:self.N]
+            freqwords = open(self.biblefreqlistfile, 'a')
+            freqnotwords = open(self.freqnotlist, 'a')
+            for word, frequency in self.top_words:
+                if 'lemma' in word:
+                    print >> freqwords, "'%s': %d," % (word, frequency)
+                else:
+                    print >> freqnotwords, "'%s', %d" % (word, frequency)
+            freqwords.close()
+            freqnotwords.close()
+            mylist = '{' + open(self.biblefreqlistfile).read() + '}'
+            myformlist = mylist.replace('\n', ' ')
+            self.dictlist = eval(myformlist)
+
+    def generatepassage(self):
+        print "Rating %s" % str(self.reference).strip("'[]")
+        if len(self.reference) == 1:
+            if self.reference[0].lower() == 'ot':
+                print "Rating all books..."
+                self.readingeasedict = {}
+                for book in self.books:
+                    mybook = self.bookdir + '/' + book
+                    self.words_count = (word.strip(punctuation).lower() for line in open(mybook)
+                                                    for word in line.split())
+                    self.readingease()
+                    self.readingeasedict[book] = self.myreadingease
+                top_books = sorted(self.readingeasedict.iteritems(), key=itemgetter(1), reverse=True)[:self.N]
+                readingeasef = open(self.readingeasefile, 'w')
+                for book, ease in top_books:
+                    print "'%s': %d," % (book.strip('.xml'), ease)
+                    print >> readingeasef, "'%s': %d," % (book.strip('.xml'), ease)
+                readingeasef.close()
+            elif '%s.xml' % (self.reference[0]) in self.books:   # <-- case sensitive
+                mybook = '%s/%s.xml' % (self.bookdir, self.reference[0].strip())
+                self.words_count = (word.strip(punctuation).lower() for line in open(mybook)
+                                                                    for word in line.split())
+                self.readingease()
+                print '%s: %d' % (self.reference[0], self.myreadingease)
+            else:
+                self.passagereference = str(self.reference[0]).split('.')
+                bookxml = minidom.parse('%s/%s.xml' % (self.bookdir, self.passagereference[0].strip()))
+                chapterlist = bookxml.getElementsByTagName('chapter')
+                passagechapter = int(self.passagereference[1]) - 1
+                chapterxml = chapterlist[passagechapter]
+                verselist = chapterxml.getElementsByTagName('verse')
+                if len(self.passagereference) == 2:
+                    self.mytext = ''
+                    for verse in verselist:
+                        myverse = verse.toxml()
+                        self.mytext += myverse
+                    self.words_count = (word.strip(punctuation).lower() for word in self.mytext.encode('utf-8').split())
+                    #self.readingease()
+                    #print '%s: %d' % (self.reference[0], self.myreadingease)
+                else:
+                    passageverse = int(self.passagereference[2]) - 1
+                    self.mytext = verselist[passageverse]
+                    self.words_count = (word.strip(punctuation).lower() for word in self.mytext.toxml().encode('utf-8').split())
+                self.readingease()
+                print '%s: %d' % (self.reference[0], self.myreadingease)
+        elif len(self.reference) == 2:  #<--to do
+                self.passagereference = str(self.reference[0]).split('.')
+                bookxml = minidom.parse('%s/%s.xml' % (bookdir, self.passagereference[0].strip()))
+                chapterlist = bookxml.getElementsByTagName('chapter')
+                passagechapter = int(self.passagereference[1]) - 1
+                chapterxml = chapterlist[passagechapter]
+                verselist = chapterxml.getElementsByTagName('verse')
+                if len(self.passagereference) == 2:
+                    self.mytext = ''
+                    for verse in verselist:
+                        myverse = verse.toxml()
+                        self.mytext += myverse
+                    self.words_count = (word.strip(punctuation).lower() for word in self.mytext.encode('utf-8').split())
+                    #self.readingease()
+                    #print '%s: %d' % (self.reference[0], self.myreadingease)
+                else:
+                    passageverse = int(self.passagereference[2]) - 1
+                    self.mytext = verselist[passageverse]
+                    self.words_count = (word.strip(punctuation).lower() for word in self.mytext.toxml().encode('utf-8').split())
+                self.readingease()
+                print '%s: %d' % (self.reference[0], self.myreadingease)
+
+    def readingease(self):
+        'Rate the reading ease of the text based on the frequency list'
+        self.numofwords = 0
+        self.freqsum = 0
+        for word in self.words_count:
+            mywordfreq = self.dictlist.get(word)
+            if str(mywordfreq).find('None') != -1:
+                pass
+            else:
+                self.freqsum += int(mywordfreq)
+                self.numofwords += 1
+        self.myreadingease = self.freqsum / self.numofwords
+        
+
+if __name__ == '__main__':
+    c = ReadingEase()
+    c.createdictionary()
+    c.generatepassage()

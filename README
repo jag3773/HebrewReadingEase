@@ -1,0 +1,7 @@
+The Hebrew Reading Ease is a scale based on word frequency.  The script iterates through the Hebrew Bible and generates a frequency index of each word that occurs.  Then, the script works back through the text and generates a difficulty average for each passage.
+
+Currently, the script will rate all of the OT books, a chapter or a specific verse.  You must pass the passage that you would like rated to the script in the form of Gen.1.1.  You may also specify Gen, or Gen.1, or ot to rate all books.
+
+The script relies on the xml files of the Open Scriptures MorphHB project found here: http://github.com/openscriptures/morphhb.
+
+See the attached odg file for the formula used in the script.
