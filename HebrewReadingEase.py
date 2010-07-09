@@ -31,7 +31,7 @@ import sys
 class ReadingEase():
     '''
     This class accepts a Hebrew Bible reference (Gen.1.1) and 
-    returns the relative Reading Ease of the text.
+    returns the Hebrew Reading Ease of the text.
     '''
 
     def __init__(self):
@@ -46,19 +46,17 @@ class ReadingEase():
         self.N = 40000
 
     def createdictionary(self):
-        #print "Deleting old files..."
-        #try: os.remove(self.biblefile)
-        #except: pass
-        #try: os.remove(self.biblefreqlistfile)
-        #except: pass
-        #try: os.remove(self.freqnotlist)
-        #except: pass
         if os.access(self.biblefreqlistfile, os.F_OK):
             print "Loading Frequency Dictionary..."
             mylist = '{' + open(self.biblefreqlistfile).read() + '}'
             myformlist = mylist.replace('\n', ' ')
             self.dictlist = eval(myformlist)
         else:
+            print "Trying to delete stale files..."
+            try: os.remove(self.biblefile)
+            except: pass
+            try: os.remove(self.freqnotlist)
+            except: pass
             print "Creating Frequency Dictionary..."
             for book in self.books:
                 mybook = open(self.bookdir + '/' + book).read()
@@ -121,8 +119,6 @@ class ReadingEase():
                         myverse = verse.toxml()
                         self.mytext += myverse
                     self.words_count = (word.strip(punctuation).lower() for word in self.mytext.encode('utf-8').split())
-                    #self.readingease()
-                    #print '%s: %d' % (self.reference[0], self.myreadingease)
                 else:
                     passageverse = int(self.passagereference[2]) - 1
                     self.mytext = verselist[passageverse]
@@ -142,8 +138,6 @@ class ReadingEase():
                         myverse = verse.toxml()
                         self.mytext += myverse
                     self.words_count = (word.strip(punctuation).lower() for word in self.mytext.encode('utf-8').split())
-                    #self.readingease()
-                    #print '%s: %d' % (self.reference[0], self.myreadingease)
                 else:
                     passageverse = int(self.passagereference[2]) - 1
                     self.mytext = verselist[passageverse]
