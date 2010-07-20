@@ -94,7 +94,6 @@ class ReadingEase():
 
     def generatepassage(self):
         print "Rating %s..." % str(self.reference).strip("'[]")
-        self.mytext = ''
         if len(self.reference) == 1:
             if self.reference[0].lower() == 'ot':
                 print "Rating all books..."
@@ -126,11 +125,12 @@ class ReadingEase():
                         self.v = 1
                         for verse in verselist:
                             self.mywelements = verse.getElementsByTagName('w')
+                            self.mytext = ''
                             for el in self.mywelements:
                                 self.mytext += el.firstChild.data.encode('utf-8') + ' '
                             self.words_count = (word.strip(punctuation).lower() for word in self.mytext.split())
                             self.readingease()
-                            print >> self.everyversef, '%d : %s.%s.%i' % (self.myreadingease, self.book.strip('.xml'), self.c, self.v)
+                            print >> self.everyversef, '%d, %d : %s.%s.%i' % (self.myreadingease, self.myharmonicease, self.book.strip('.xml'), self.c, self.v)
                             self.v += 1
                         self.c += 1
                 self.everyversef.close()
@@ -210,6 +210,7 @@ class ReadingEase():
         'Rate the reading ease of the text based on the frequency list'
         self.numofwords = 0
         self.freqsum = 0
+        self.harmonic = 0
         for word in self.words_count:
             mywordfreq = self.dictlist.get(word)
             #print word + ' ' + str(mywordfreq)
@@ -217,10 +218,12 @@ class ReadingEase():
                 pass
             else:
                 self.freqsum += int(mywordfreq)
+                self.harmonic += 1 / int(mywordfreq)
                 self.numofwords += 1
         try: self.myreadingease = self.freqsum / self.numofwords
         except ZeroDivisionError: self.myreadingease = 0
-        
+        try: self.myharmonicease = self.numofwords / self.harmonic
+        except ZeroDivisionError: self.myharmonicease = 0
 
 if __name__ == '__main__':
     c = ReadingEase()
