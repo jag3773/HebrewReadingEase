@@ -43,7 +43,7 @@ class ReadingEase():
         self.biblefreqlistfile = 'bible-list.txt'
         self.freqnotlist = 'notlist.txt'
         self.readingeasefile = 'HebrewReadingEasebyBook.txt'
-        self.N = 40000
+        self.N = 113000
 
     def createdictionary(self):
         if os.access(self.biblefreqlistfile, os.F_OK):
