@@ -100,6 +100,27 @@ class ReadingEase():
                     print "'%s': %d," % (book.strip('.xml'), ease)
                     print >> readingeasef, "'%s': %d," % (book.strip('.xml'), ease)
                 readingeasef.close()
+            if self.reference[0].lower() == 'all':
+                self.passagereference = str(self.reference[0]).split('.')
+                self.everyversefile = 'everyverse2.txt'
+                self.everyversef = open(self.everyversefile, 'w')
+                for self.book in self.books:
+                    print self.book
+                    bookxml = minidom.parse('./%s/%s' % (self.bookdir, self.book))
+                    chapterlist = bookxml.getElementsByTagName('chapter')
+                    self.c = 1
+                    for chap in chapterlist:
+                        chapterxml = chapterlist[self.c - 1]
+                        verselist = chapterxml.getElementsByTagName('verse')
+                        self.v = 1
+                        for verse in verselist:
+                            self.myverse = verse.toxml()
+                            self.words_count = (word.strip(punctuation).lower() for word in self.myverse.encode('utf-8').split())
+                            self.readingease()
+                            print >> self.everyversef, '%d : %s.%s.%i' % (self.myreadingease, self.book.strip('.xml'), self.c, self.v)
+                            self.v += 1
+                        self.c += 1
+                self.everyversef.close()
             elif '%s.xml' % (self.reference[0]) in self.books:   # <-- case sensitive
                 mybook = '%s/%s.xml' % (self.bookdir, self.reference[0].strip())
                 self.words_count = (word.strip(punctuation).lower() for line in open(mybook)
@@ -119,12 +140,23 @@ class ReadingEase():
                         myverse = verse.toxml()
                         self.mytext += myverse
                     self.words_count = (word.strip(punctuation).lower() for word in self.mytext.encode('utf-8').split())
+                    self.readingease()
+                    print '%s: %d' % (self.reference[0], self.myreadingease)
                 else:
-                    passageverse = int(self.passagereference[2]) - 1
-                    self.mytext = verselist[passageverse]
-                    self.words_count = (word.strip(punctuation).lower() for word in self.mytext.toxml().encode('utf-8').split())
-                self.readingease()
-                print '%s: %d' % (self.reference[0], self.myreadingease)
+                    if self.passagereference[2] == '*':
+                        self.i = 1
+                        for verse in verselist:
+                            self.myverse = verse.toxml()
+                            self.words_count = (word.strip(punctuation).lower() for word in self.myverse.encode('utf-8').split())
+                            self.readingease()
+                            print '%s.%s.%i: %d' % (self.passagereference[0], self.passagereference[1], self.i, self.myreadingease)
+                            self.i += 1
+                    else:
+                        passageverse = int(self.passagereference[2]) - 1
+                        self.mytext = verselist[passageverse]
+                        self.words_count = (word.strip(punctuation).lower() for word in self.mytext.toxml().encode('utf-8').split())
+                        self.readingease()
+                        print '%s: %d' % (self.reference[0], self.myreadingease)
         elif len(self.reference) == 2:  #<--to do
                 self.passagereference = str(self.reference[0]).split('.')
                 bookxml = minidom.parse('%s/%s.xml' % (bookdir, self.passagereference[0].strip()))
@@ -145,6 +177,19 @@ class ReadingEase():
                 self.readingease()
                 print '%s: %d' % (self.reference[0], self.myreadingease)
 
+    def allversesinchapter(self):
+        self.passagereference = str(self.reference[0]).split('.')
+        bookxml = minidom.parse('%s/%s.xml' % (self.bookdir, self.passagereference[0].strip()))
+        chapterlist = bookxml.getElementsByTagName('chapter')
+        passagechapter = int(self.passagereference[1]) - 1
+        chapterxml = chapterlist[passagechapter]
+        verselist = chapterxml.getElementsByTagName('verse')
+        for verse in verselist:
+            self.myverse = verse.toxml()
+            self.words_count = (word.strip(punctuation).lower() for word in self.myverse.encode('utf-8').split())
+            self.readingease()
+            print '%s: %d' % (self.reference[0], self.myreadingease)
+
     def readingease(self):
         'Rate the reading ease of the text based on the frequency list'
         self.numofwords = 0
@@ -156,7 +201,8 @@ class ReadingEase():
             else:
                 self.freqsum += int(mywordfreq)
                 self.numofwords += 1
-        self.myreadingease = self.freqsum / self.numofwords
+        try: self.myreadingease = self.freqsum / self.numofwords
+        except ZeroDivisionError: self.myreadingease = 0
         
 
 if __name__ == '__main__':
