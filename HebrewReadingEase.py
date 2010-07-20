@@ -58,11 +58,24 @@ class ReadingEase():
             try: os.remove(self.freqnotlist)
             except: pass
             print "Creating Frequency Dictionary..."
-            for book in self.books:
-                mybook = open(self.bookdir + '/' + book).read()
-                biblef = open(self.biblefile, 'a')
-                biblef.write(mybook)
-                biblef.close()
+            self.biblef = open(self.biblefile, 'w')
+            for self.book in self.books:
+                print self.book
+                bookxml = minidom.parse('./%s/%s' % (self.bookdir, self.book))
+                chapterlist = bookxml.getElementsByTagName('chapter')
+                self.c = 1
+                for chap in chapterlist:
+                    chapterxml = chapterlist[self.c - 1]
+                    verselist = chapterxml.getElementsByTagName('verse')
+                    self.v = 1
+                    for verse in verselist:
+                        self.myverse = verse
+                        self.mywelements = self.myverse.getElementsByTagName('w')
+                        for el in self.mywelements:
+                            print >> self.biblef, el.firstChild.data.encode('utf-8')
+                        self.v += 1
+                    self.c += 1
+            self.biblef.close()
             self.words = {}
             self.words_gen = (word.strip(punctuation).lower() for line in open(self.biblefile)
                                                for word in line.split())
@@ -72,10 +85,7 @@ class ReadingEase():
             freqwords = open(self.biblefreqlistfile, 'a')
             freqnotwords = open(self.freqnotlist, 'a')
             for word, frequency in self.top_words:
-                if 'lemma' in word:
-                    print >> freqwords, "'%s': %d," % (word, frequency)
-                else:
-                    print >> freqnotwords, "'%s', %d" % (word, frequency)
+                print >> freqwords, "'%s': %d," % (word, frequency)
             freqwords.close()
             freqnotwords.close()
             mylist = '{' + open(self.biblefreqlistfile).read() + '}'
@@ -83,7 +93,8 @@ class ReadingEase():
             self.dictlist = eval(myformlist)
 
     def generatepassage(self):
-        print "Rating %s" % str(self.reference).strip("'[]")
+        print "Rating %s..." % str(self.reference).strip("'[]")
+        self.mytext = ''
         if len(self.reference) == 1:
             if self.reference[0].lower() == 'ot':
                 print "Rating all books..."
@@ -102,7 +113,7 @@ class ReadingEase():
                 readingeasef.close()
             if self.reference[0].lower() == 'all':
                 self.passagereference = str(self.reference[0]).split('.')
-                self.everyversefile = 'everyverse2.txt'
+                self.everyversefile = 'everyverse-overhaul.txt'
                 self.everyversef = open(self.everyversefile, 'w')
                 for self.book in self.books:
                     print self.book
@@ -114,8 +125,10 @@ class ReadingEase():
                         verselist = chapterxml.getElementsByTagName('verse')
                         self.v = 1
                         for verse in verselist:
-                            self.myverse = verse.toxml()
-                            self.words_count = (word.strip(punctuation).lower() for word in self.myverse.encode('utf-8').split())
+                            self.mywelements = verse.getElementsByTagName('w')
+                            for el in self.mywelements:
+                                self.mytext += el.firstChild.data.encode('utf-8') + ' '
+                            self.words_count = (word.strip(punctuation).lower() for word in self.mytext.split())
                             self.readingease()
                             print >> self.everyversef, '%d : %s.%s.%i' % (self.myreadingease, self.book.strip('.xml'), self.c, self.v)
                             self.v += 1
@@ -153,8 +166,11 @@ class ReadingEase():
                             self.i += 1
                     else:
                         passageverse = int(self.passagereference[2]) - 1
-                        self.mytext = verselist[passageverse]
-                        self.words_count = (word.strip(punctuation).lower() for word in self.mytext.toxml().encode('utf-8').split())
+                        self.myverse = verselist[passageverse]
+                        self.mywelements = self.myverse.getElementsByTagName('w')
+                        for el in self.mywelements:
+                            self.mytext += el.firstChild.data.encode('utf-8') + ' '
+                        self.words_count = (word.strip(punctuation).lower() for word in self.mytext.split())
                         self.readingease()
                         print '%s: %d' % (self.reference[0], self.myreadingease)
         elif len(self.reference) == 2:  #<--to do
@@ -196,6 +212,7 @@ class ReadingEase():
         self.freqsum = 0
         for word in self.words_count:
             mywordfreq = self.dictlist.get(word)
+            #print word + ' ' + str(mywordfreq)
             if str(mywordfreq).find('None') != -1:
                 pass
             else:
