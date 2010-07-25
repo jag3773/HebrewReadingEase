@@ -229,7 +229,6 @@ class ReadingEase():
         self.freqvals = ''
         for word in self.words_count:
             mywordfreq = self.dictlist.get(word)
-            os.system('echo %s >> mytext.txt' % (str(mywordfreq)))
             self.freqsum += Decimal('%d' % mywordfreq)
             self.harmonic += 1 / Decimal('%d' % mywordfreq)
             self.numofwords += 1
