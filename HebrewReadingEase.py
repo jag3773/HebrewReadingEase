@@ -26,6 +26,7 @@ from string import punctuation
 from operator import itemgetter
 from xml.dom import minidom
 from collections import defaultdict
+from decimal import *
 import os
 import sys
 
@@ -44,6 +45,7 @@ class ReadingEase():
         self.biblefreqlistfile = 'bible-list.txt'
         self.readingeasefile = 'HebrewReadingEasebyBook.txt'
         self.N = 113000
+        #self.books = ["Ruth"]
         self.books = ["Gen","Exod","Lev","Num", "Deut", "Josh", "Judg", "Ruth","1Sam",
             "2Sam","1Kgs","2Kgs","1Chr", "2Chr","Ezra","Neh","Esth","Job","Ps",
             "Prov","Eccl","Song","Isa","Jer","Lam","Ezek","Dan","Hos","Joel",
@@ -93,7 +95,8 @@ class ReadingEase():
         else:
             print "Creating Frequency Dictionary..."
             self.words = defaultdict(int)
-            for word in open(self.biblefile):
+            self.words_gen = (line.strip().lower() for line in open(self.biblefile))
+            for word in self.words_gen:
                 self.words[word] = self.words.get(word, 0) + 1
             self.top_words = sorted(self.words.iteritems(), key=itemgetter(1), reverse=True)[:self.N]
             freqwords = open(self.biblefreqlistfile, 'a')
@@ -104,7 +107,7 @@ class ReadingEase():
             myformlist = mylist.replace('\n', ' ')
             self.dictlist = eval(myformlist)
 
-    def generatepassage(self):
+    def rate(self):
         print "Rating %s..." % str(self.reference).strip("'[]")
         if len(self.reference) == 1:
             if self.reference[0].lower() == 'ot':
@@ -124,11 +127,11 @@ class ReadingEase():
                 readingeasef.close()
             if self.reference[0].lower() == 'all':
                 self.passagereference = str(self.reference[0]).split('.')
-                self.everyversefile = 'everyverse-overhaul.txt'
+                self.everyversefile = 'everyverse.txt'
                 self.everyversef = open(self.everyversefile, 'w')
                 for self.book in self.books:
                     print self.book
-                    bookxml = minidom.parse('./%s/%s' % (self.bookdir, self.book))
+                    bookxml = minidom.parse('./%s/%s.xml' % (self.bookdir, self.book))
                     chapterlist = bookxml.getElementsByTagName('chapter')
                     self.c = 1
                     for chap in chapterlist:
@@ -139,10 +142,10 @@ class ReadingEase():
                             self.mywelements = verse.getElementsByTagName('w')
                             self.mytext = ''
                             for el in self.mywelements:
-                                self.mytext += el.firstChild.data.encode('utf-8') + ' '
-                            self.words_count = (word.strip(punctuation).lower() for word in self.mytext.split())
+                                self.mytext += self.normalize(el.firstChild.data).encode('utf-8') + ' '
+                            self.words_count = (word.strip().lower() for word in self.mytext.split())
                             self.readingease()
-                            print >> self.everyversef, '%d, %d : %s.%s.%i' % (self.myreadingease, self.myharmonicease, self.book.strip('.xml'), self.c, self.v)
+                            print >> self.everyversef, '%d, %d, %d, %s.%s.%i' % (self.myreadingease, self.myharmonicease, self.geometricease, self.book, self.c, self.v)
                             self.v += 1
                         self.c += 1
                 self.everyversef.close()
@@ -220,25 +223,24 @@ class ReadingEase():
 
     def readingease(self):
         'Rate the reading ease of the text based on the frequency list'
-        self.numofwords = 0
-        self.freqsum = 0
-        self.harmonic = 0
+        self.numofwords = Decimal('0')
+        self.freqsum = Decimal('0')
+        self.harmonic = Decimal('0')
+        self.freqvals = ''
         for word in self.words_count:
             mywordfreq = self.dictlist.get(word)
-            #print word + ' ' + str(mywordfreq)
-            if str(mywordfreq).find('None') != -1:
-                pass
-            else:
-                self.freqsum += int(mywordfreq)
-                self.harmonic += 1 / int(mywordfreq)
-                self.numofwords += 1
-        try: self.myreadingease = self.freqsum / self.numofwords
-        except ZeroDivisionError: self.myreadingease = 0
-        try: self.myharmonicease = self.numofwords / self.harmonic
-        except ZeroDivisionError: self.myharmonicease = 0
+            os.system('echo %s >> mytext.txt' % (str(mywordfreq)))
+            self.freqsum += Decimal('%d' % mywordfreq)
+            self.harmonic += 1 / Decimal('%d' % mywordfreq)
+            self.numofwords += 1
+            self.freqvals += '%d * ' % mywordfreq
+        self.myreadingease = self.freqsum / self.numofwords
+        self.myharmonicease = self.numofwords / self.harmonic
+        self.geometric = eval(self.freqvals.strip(' *'))
+        self.geometricease = self.geometric ** (1 / self.numofwords)
 
 if __name__ == '__main__':
     hre = ReadingEase()
     hre.transform()
     hre.createdictionary()
-#    hre.generatepassage()
+    hre.rate()
