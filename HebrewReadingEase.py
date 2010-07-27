@@ -45,11 +45,11 @@ class ReadingEase():
         self.biblefreqlistfile = 'bible-list.txt'
         self.readingeasefile = 'HebrewReadingEasebyBook.txt'
         self.N = 113000
-        #self.books = ["Ruth"]
-        self.books = ["Gen","Exod","Lev","Num", "Deut", "Josh", "Judg", "Ruth","1Sam",
-            "2Sam","1Kgs","2Kgs","1Chr", "2Chr","Ezra","Neh","Esth","Job","Ps",
-            "Prov","Eccl","Song","Isa","Jer","Lam","Ezek","Dan","Hos","Joel",
-            "Amos","Obad","Jonah","Mic","Nah","Hab","Zeph","Hag","Zech","Mal"]
+        self.books = ["Ruth"]
+        #self.books = ["Gen","Exod","Lev","Num", "Deut", "Josh", "Judg", "Ruth","1Sam",
+        #    "2Sam","1Kgs","2Kgs","1Chr", "2Chr","Ezra","Neh","Esth","Job","Ps",
+        #    "Prov","Eccl","Song","Isa","Jer","Lam","Ezek","Dan","Hos","Joel",
+        #    "Amos","Obad","Jonah","Mic","Nah","Hab","Zeph","Hag","Zech","Mal"]
         self.cantillation = [u'\u0590',u'\u0591',u'\u0592',u'\u0593',u'\u0594',u'\u0595',
                     u'\u0596',u'\u0597',u'\u0598',u'\u0599',u'\u059A',u'\u059B',
                     u'\u059C',u'\u059D',u'\u059E',u'\u059F',u'\u05A0',u'\u05A1',
@@ -127,7 +127,7 @@ class ReadingEase():
                 readingeasef.close()
             if self.reference[0].lower() == 'all':
                 self.passagereference = str(self.reference[0]).split('.')
-                self.everyversefile = 'everyverse.txt'
+                self.everyversefile = 'ruthout.txt'
                 self.everyversef = open(self.everyversefile, 'w')
                 for self.book in self.books:
                     print self.book
@@ -139,13 +139,25 @@ class ReadingEase():
                         verselist = chapterxml.getElementsByTagName('verse')
                         self.v = 1
                         for verse in verselist:
-                            self.mywelements = verse.getElementsByTagName('w')
-                            self.mytext = ''
+                            self.mywelements = verse.childNodes
+                            self.mytext = []
                             for el in self.mywelements:
-                                self.mytext += self.normalize(el.firstChild.data).encode('utf-8') + ' '
-                            self.words_count = (word.strip().lower() for word in self.mytext.split())
-                            self.readingease()
-                            print >> self.everyversef, '%d, %d, %d, %s.%s.%i' % (self.myreadingease, self.myharmonicease, self.geometricease, self.book, self.c, self.v)
+                                try:
+                                    if el.tagName == 'w':
+                                        print 'w'
+                                        self.mytext.append(self.normalize(el.firstChild.data).encode('utf-8'))
+                                    elif el.tagName == 'note':
+                                        print 'note'
+                                        self.noteelements = el.childNodes
+                                        for nel in self.noteelements:
+                                            if nel.tagName == 'rdg':
+                                                self.mytext.pop(-1)
+                                                self.mytext.append(self.normalize(nel.childNodes[0].firstChild.data).encode('utf-8'))
+                                    else: pass
+                                except AttributeError: pass
+                            self.readingease(self.mytext)
+                            print >> self.everyversef, '%d, %d, %d, %s.%s.%i' % (self.myreadingease, \
+                                self.myharmonicease, self.geometricease, self.book, self.c, self.v)
                             self.v += 1
                         self.c += 1
                 self.everyversef.close()
@@ -221,13 +233,13 @@ class ReadingEase():
             self.readingease()
             print '%s: %d' % (self.reference[0], self.myreadingease)
 
-    def readingease(self):
+    def readingease(self, passage):
         'Rate the reading ease of the text based on the frequency list'
         self.numofwords = Decimal('0')
         self.freqsum = Decimal('0')
         self.harmonic = Decimal('0')
         self.freqvals = ''
-        for word in self.words_count:
+        for word in passage:
             mywordfreq = self.dictlist.get(word)
             self.freqsum += Decimal('%d' % mywordfreq)
             self.harmonic += 1 / Decimal('%d' % mywordfreq)
