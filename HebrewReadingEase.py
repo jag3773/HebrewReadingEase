@@ -43,19 +43,19 @@ class ReadingEase():
         self.listdir = './lists'
         self.biblefile = 'bible.txt'
         self.biblefreqlistfile = 'bible-list.txt'
+        self.everyversefile = 'everyverse.txt'
         self.readingeasefile = 'HebrewReadingEasebyBook.txt'
         self.N = 113000
-        self.books = ["Ruth"]
-        #self.books = ["Gen","Exod","Lev","Num", "Deut", "Josh", "Judg", "Ruth","1Sam",
-        #    "2Sam","1Kgs","2Kgs","1Chr", "2Chr","Ezra","Neh","Esth","Job","Ps",
-        #    "Prov","Eccl","Song","Isa","Jer","Lam","Ezek","Dan","Hos","Joel",
-        #    "Amos","Obad","Jonah","Mic","Nah","Hab","Zeph","Hag","Zech","Mal"]
+        self.books = ["Gen","Exod","Lev","Num", "Deut", "Josh", "Judg", "Ruth","1Sam",
+            "2Sam","1Kgs","2Kgs","1Chr", "2Chr","Ezra","Neh","Esth","Job","Ps",
+            "Prov","Eccl","Song","Isa","Jer","Lam","Ezek","Dan","Hos","Joel",
+            "Amos","Obad","Jonah","Mic","Nah","Hab","Zeph","Hag","Zech","Mal"]
         self.cantillation = [u'\u0590',u'\u0591',u'\u0592',u'\u0593',u'\u0594',u'\u0595',
                     u'\u0596',u'\u0597',u'\u0598',u'\u0599',u'\u059A',u'\u059B',
                     u'\u059C',u'\u059D',u'\u059E',u'\u059F',u'\u05A0',u'\u05A1',
                     u'\u05A2',u'\u05A3',u'\u05A4',u'\u05A5',u'\u05A6',u'\u05A7',
                     u'\u05A8',u'\u05A9',u'\u05AA',u'\u05AB',u'\u05AC',u'\u05AD',
-                    u'\u05AE',u'\u05AF',u'\u002F'] #Also includes / character
+                    u'\u05AE',u'\u05AF',u'\u002F'] #Also includes '/' character
 
     def normalize(self, data):
         for cant in self.cantillation:
@@ -76,13 +76,25 @@ class ReadingEase():
                     chapterxml = chapterlist[self.c - 1]
                     verselist = chapterxml.getElementsByTagName('verse')
                     for verse in verselist:
-                        self.myverse = verse
-                        self.mywelements = self.myverse.getElementsByTagName('w')
-                        self.ref = self.myverse.attributes['osisID'].value.encode('utf-8').split('.')
-                        self.elnum = 0
+                        self.ref = verse.attributes['osisID'].value.encode('utf-8').split('.')
+                        self.mywelements = verse.childNodes
+                        self.mytext = []
                         for el in self.mywelements:
-                            self.elnum += 1
-                            print >> self.biblef, '%s' % self.normalize(el.firstChild.data).encode('utf-8')
+                            try:
+                                if el.tagName == 'w':
+                                    self.mytext.append(self.normalize(el.firstChild.data).encode('utf-8'))
+                                elif el.tagName == 'note':
+                                    self.noteelements = el.childNodes
+                                    for nel in self.noteelements:
+                                        if nel.tagName == 'rdg':
+                                            if nel.attributes['type'] == 'x-qere':
+                                                self.mytext.pop(-1)
+                                                self.mytext.append(self.normalize(nel.childNodes[0].firstChild.data).encode('utf-8'))
+                                            else: pass
+                                        else: pass
+                                else: pass
+                            except AttributeError: pass
+                        print >> self.biblef, '%s' % '\n'.join(self.mytext)
                     self.c += 1
             self.biblef.close()
 
@@ -127,7 +139,6 @@ class ReadingEase():
                 readingeasef.close()
             if self.reference[0].lower() == 'all':
                 self.passagereference = str(self.reference[0]).split('.')
-                self.everyversefile = 'ruthout.txt'
                 self.everyversef = open(self.everyversefile, 'w')
                 for self.book in self.books:
                     print self.book
@@ -139,20 +150,22 @@ class ReadingEase():
                         verselist = chapterxml.getElementsByTagName('verse')
                         self.v = 1
                         for verse in verselist:
+                            self.ref = verse.attributes['osisID'].value.encode('utf-8').split('.')
                             self.mywelements = verse.childNodes
                             self.mytext = []
                             for el in self.mywelements:
                                 try:
                                     if el.tagName == 'w':
-                                        print 'w'
                                         self.mytext.append(self.normalize(el.firstChild.data).encode('utf-8'))
                                     elif el.tagName == 'note':
-                                        print 'note'
                                         self.noteelements = el.childNodes
                                         for nel in self.noteelements:
                                             if nel.tagName == 'rdg':
-                                                self.mytext.pop(-1)
-                                                self.mytext.append(self.normalize(nel.childNodes[0].firstChild.data).encode('utf-8'))
+                                                if nel.attributes['type'] == 'x-qere':
+                                                    self.mytext.pop(-1)
+                                                    self.mytext.append(self.normalize(nel.childNodes[0].firstChild.data).encode('utf-8'))
+                                                else: pass
+                                            else: pass
                                     else: pass
                                 except AttributeError: pass
                             self.readingease(self.mytext)
