@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf8 -*-
-
 #Copyright (c) 2010 Jesse Griffin
 #http://creativecommons.org/licenses/MIT/
 #
@@ -21,7 +20,6 @@
 #LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 #OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 #THE SOFTWARE.
-
 from string import punctuation
 from operator import itemgetter
 from xml.dom import minidom
@@ -29,13 +27,11 @@ from collections import defaultdict
 from decimal import *
 import os
 import sys
-
 class ReadingEase():
     '''
     This class accepts a Hebrew Bible reference (Gen.1.1) and 
     returns the Hebrew Reading Ease of the text.
     '''
-
     def __init__(self):
         self.reference = sys.argv[1:]
         self.bookdir = './wlc'
@@ -43,7 +39,8 @@ class ReadingEase():
         self.listdir = './lists'
         self.biblefile = 'bible.txt'
         self.biblefreqlistfile = 'bible-list.txt'
-        self.everyversefile = 'everyverse.txt'
+        self.everyversefile = 'everyverse-test.txt'
+        self.everybookfile = 'everybook.txt'
         self.readingeasefile = 'HebrewReadingEasebyBook.txt'
         self.N = 113000
         self.books = ["Gen","Exod","Lev","Num", "Deut", "Josh", "Judg", "Ruth","1Sam",
@@ -56,12 +53,10 @@ class ReadingEase():
                     u'\u05A2',u'\u05A3',u'\u05A4',u'\u05A5',u'\u05A6',u'\u05A7',
                     u'\u05A8',u'\u05A9',u'\u05AA',u'\u05AB',u'\u05AC',u'\u05AD',
                     u'\u05AE',u'\u05AF',u'\u002F'] #Also includes '/' character
-
     def normalize(self, data):
         for cant in self.cantillation:
             data = data.replace(cant, '')
         return data
-
     def transform(self):
         if os.access(self.biblefile, os.F_OK): print "Found flat Hebrew Bible file"
         else:
@@ -97,7 +92,6 @@ class ReadingEase():
                         print >> self.biblef, '%s' % '\n'.join(self.mytext)
                     self.c += 1
             self.biblef.close()
-
     def createdictionary(self):
         if os.access(self.biblefreqlistfile, os.F_OK):
             print "Loading Frequency Dictionary..."
@@ -118,26 +112,48 @@ class ReadingEase():
             mylist = '{' + open(self.biblefreqlistfile).read() + '}'
             myformlist = mylist.replace('\n', ' ')
             self.dictlist = eval(myformlist)
-
     def rate(self):
         print "Rating %s..." % str(self.reference).strip("'[]")
         if len(self.reference) == 1:
             if self.reference[0].lower() == 'ot':
-                print "Rating all books..."
-                self.readingeasedict = {}
-                for book in self.books:
-                    mybook = self.bookdir + '/' + book
-                    self.words_count = (word.strip(punctuation).lower() for line in open(mybook)
-                                                    for word in line.split())
-                    self.readingease()
-                    self.readingeasedict[book] = self.myreadingease
-                top_books = sorted(self.readingeasedict.iteritems(), key=itemgetter(1), reverse=True)[:self.N]
-                readingeasef = open(self.readingeasefile, 'w')
-                for book, ease in top_books:
-                    print "'%s': %d," % (book.strip('.xml'), ease)
-                    print >> readingeasef, "'%s': %d," % (book.strip('.xml'), ease)
-                readingeasef.close()
+                print "Rating book by book..."
+                self.everybookf = open(self.everybookfile, 'w')
+                for self.book in self.books:
+                    print self.book
+                    bookxml = minidom.parse('./%s/%s.xml' % (self.bookdir, self.book))
+                    chapterlist = bookxml.getElementsByTagName('chapter')
+                    self.c = 1
+                    for chap in chapterlist:
+                        chapterxml = chapterlist[self.c - 1]
+                        verselist = chapterxml.getElementsByTagName('verse')
+                        self.v = 1
+                        self.mytext = []
+                        for verse in verselist:
+                            self.ref = verse.attributes['osisID'].value.encode('utf-8').split('.')
+                            self.mywelements = verse.childNodes
+                            for el in self.mywelements:
+                                try:
+                                    if el.tagName == 'w':
+                                        self.mytext.append(self.normalize(el.firstChild.data).encode('utf-8'))
+                                    elif el.tagName == 'note':
+                                        self.noteelements = el.childNodes
+                                        for nel in self.noteelements:
+                                            if nel.tagName == 'rdg':
+                                                if nel.attributes['type'] == 'x-qere':
+                                                    self.mytext.pop(-1)
+                                                    self.mytext.append(self.normalize(nel.childNodes[0].firstChild.data).encode('utf-8'))
+                                                else: pass
+                                            else: pass
+                                    else: pass
+                                except AttributeError: pass
+                            self.v += 1
+                        self.readingease(self.mytext)
+                        print >> self.everybookf, '%d, %d, %s.%s' % (self.myreadingease, \
+                            self.myharmonicease, self.book, self.c)
+                        self.c += 1
+                self.everybookf.close()
             if self.reference[0].lower() == 'all':
+                print "Rating verse by verse..."
                 self.passagereference = str(self.reference[0]).split('.')
                 self.everyversef = open(self.everyversefile, 'w')
                 for self.book in self.books:
@@ -232,7 +248,6 @@ class ReadingEase():
                     self.words_count = (word.strip(punctuation).lower() for word in self.mytext.toxml().encode('latin-1').split())
                 self.readingease()
                 print '%s: %d' % (self.reference[0], self.myreadingease)
-
     def allversesinchapter(self):
         self.passagereference = str(self.reference[0]).split('.')
         bookxml = minidom.parse('%s/%s.xml' % (self.bookdir, self.passagereference[0].strip()))
@@ -245,24 +260,18 @@ class ReadingEase():
             self.words_count = (word.strip(punctuation).lower() for word in self.myverse.encode('utf-8').split())
             self.readingease()
             print '%s: %d' % (self.reference[0], self.myreadingease)
-
     def readingease(self, passage):
         'Rate the reading ease of the text based on the frequency list'
         self.numofwords = Decimal('0')
         self.freqsum = Decimal('0')
         self.harmonic = Decimal('0')
-        self.freqvals = ''
         for word in passage:
             mywordfreq = self.dictlist.get(word)
             self.freqsum += Decimal('%d' % mywordfreq)
             self.harmonic += 1 / Decimal('%d' % mywordfreq)
             self.numofwords += 1
-            self.freqvals += '%d * ' % mywordfreq
         self.myreadingease = self.freqsum / self.numofwords
         self.myharmonicease = self.numofwords / self.harmonic
-        self.geometric = eval(self.freqvals.strip(' *'))
-        self.geometricease = self.geometric ** (1 / self.numofwords)
-
 if __name__ == '__main__':
     hre = ReadingEase()
     hre.transform()
