@@ -28,20 +28,14 @@ from decimal import *
 import os
 import sys
 class ReadingEase():
-    '''
-    This class accepts a Hebrew Bible reference (Gen.1.1) and 
-    returns the Hebrew Reading Ease of the text.
-    '''
     def __init__(self):
         self.reference = sys.argv[1:]
         self.bookdir = './wlc'
         books = os.listdir(self.bookdir)
         self.listdir = './lists'
-        self.biblefile = 'bible.txt'
-        self.biblefreqlistfile = 'bible-list.txt'
-        self.everyversefile = 'everyverse-test.txt'
-        self.everybookfile = 'everybook.txt'
-        self.readingeasefile = 'HebrewReadingEasebyBook.txt'
+        self.biblefile = 'HebrewBible.txt'
+        self.biblefreqlistfile = 'HebrewBible-FrequencyList.txt'
+        self.hrefile = 'hre.txt'
         self.N = 113000
         self.books = ["Gen","Exod","Lev","Num", "Deut", "Josh", "Judg", "Ruth","1Sam",
             "2Sam","1Kgs","2Kgs","1Chr", "2Chr","Ezra","Neh","Esth","Job","Ps",
@@ -99,6 +93,7 @@ class ReadingEase():
             myformlist = mylist.replace('\n', ' ')
             self.dictlist = eval(myformlist)
         else:
+            #perhaps import collections and use Counter()
             print "Creating Frequency Dictionary..."
             self.words = defaultdict(int)
             self.words_gen = (line.strip().lower() for line in open(self.biblefile))
@@ -113,155 +108,69 @@ class ReadingEase():
             myformlist = mylist.replace('\n', ' ')
             self.dictlist = eval(myformlist)
     def rate(self):
-        print "Rating %s..." % str(self.reference).strip("'[]")
-        if len(self.reference) == 1:
-            if self.reference[0].lower() == 'ot':
-                print "Rating book by book..."
-                self.everybookf = open(self.everybookfile, 'w')
-                for self.book in self.books:
-                    print self.book
-                    bookxml = minidom.parse('./%s/%s.xml' % (self.bookdir, self.book))
-                    chapterlist = bookxml.getElementsByTagName('chapter')
-                    self.c = 1
-                    for chap in chapterlist:
-                        chapterxml = chapterlist[self.c - 1]
-                        verselist = chapterxml.getElementsByTagName('verse')
-                        self.v = 1
-                        self.mytext = []
-                        for verse in verselist:
-                            self.ref = verse.attributes['osisID'].value.encode('utf-8').split('.')
-                            self.mywelements = verse.childNodes
-                            for el in self.mywelements:
-                                try:
-                                    if el.tagName == 'w':
-                                        self.mytext.append(self.normalize(el.firstChild.data).encode('utf-8'))
-                                    elif el.tagName == 'note':
-                                        self.noteelements = el.childNodes
-                                        for nel in self.noteelements:
-                                            if nel.tagName == 'rdg':
-                                                if nel.attributes['type'] == 'x-qere':
-                                                    self.mytext.pop(-1)
-                                                    self.mytext.append(self.normalize(nel.childNodes[0].firstChild.data).encode('utf-8'))
-                                                else: pass
-                                            else: pass
-                                    else: pass
-                                except AttributeError: pass
-                            self.v += 1
-                        self.readingease(self.mytext)
-                        print >> self.everybookf, '%d, %d, %s.%s' % (self.myreadingease, \
-                            self.myharmonicease, self.book, self.c)
-                        self.c += 1
-                self.everybookf.close()
-            if self.reference[0].lower() == 'all':
-                print "Rating verse by verse..."
-                self.passagereference = str(self.reference[0]).split('.')
-                self.everyversef = open(self.everyversefile, 'w')
-                for self.book in self.books:
-                    print self.book
-                    bookxml = minidom.parse('./%s/%s.xml' % (self.bookdir, self.book))
-                    chapterlist = bookxml.getElementsByTagName('chapter')
-                    self.c = 1
-                    for chap in chapterlist:
-                        chapterxml = chapterlist[self.c - 1]
-                        verselist = chapterxml.getElementsByTagName('verse')
-                        self.v = 1
-                        for verse in verselist:
-                            self.ref = verse.attributes['osisID'].value.encode('utf-8').split('.')
-                            self.mywelements = verse.childNodes
-                            self.mytext = []
-                            for el in self.mywelements:
-                                try:
-                                    if el.tagName == 'w':
-                                        self.mytext.append(self.normalize(el.firstChild.data).encode('utf-8'))
-                                    elif el.tagName == 'note':
-                                        self.noteelements = el.childNodes
-                                        for nel in self.noteelements:
-                                            if nel.tagName == 'rdg':
-                                                if nel.attributes['type'] == 'x-qere':
-                                                    self.mytext.pop(-1)
-                                                    self.mytext.append(self.normalize(nel.childNodes[0].firstChild.data).encode('utf-8'))
-                                                else: pass
-                                            else: pass
-                                    else: pass
-                                except AttributeError: pass
-                            self.readingease(self.mytext)
-                            print >> self.everyversef, '%d, %d, %d, %s.%s.%i' % (self.myreadingease, \
-                                self.myharmonicease, self.geometricease, self.book, self.c, self.v)
-                            self.v += 1
-                        self.c += 1
-                self.everyversef.close()
-            elif '%s.xml' % (self.reference[0]) in self.books:   # <-- case sensitive
-                mybook = '%s/%s.xml' % (self.bookdir, self.reference[0].strip())
-                self.words_count = (word.strip(punctuation).lower() for line in open(mybook)
-                                                                    for word in line.split())
-                self.readingease()
-                print '%s: %d' % (self.reference[0], self.myreadingease)
-            else:
-                self.passagereference = str(self.reference[0]).split('.')
-                bookxml = minidom.parse('%s/%s.xml' % (self.bookdir, self.passagereference[0].strip()))
-                chapterlist = bookxml.getElementsByTagName('chapter')
-                passagechapter = int(self.passagereference[1]) - 1
-                chapterxml = chapterlist[passagechapter]
+        print "Rating..."
+        #hrelist = []
+        #hreform = []
+        self.href = open(self.hrefile, 'w')
+        for self.book in self.books:
+            print self.book
+            bookxml = minidom.parse('./%s/%s.xml' % (self.bookdir, self.book))
+            chapterlist = bookxml.getElementsByTagName('chapter')
+            self.c = 1
+            self.myb = []
+            for chap in chapterlist:
+                chapterxml = chapterlist[self.c - 1]
                 verselist = chapterxml.getElementsByTagName('verse')
-                if len(self.passagereference) == 2:
-                    self.mytext = ''
-                    for verse in verselist:
-                        myverse = verse.toxml()
-                        self.mytext += myverse
-                    self.words_count = (word.strip(punctuation).lower() for word in self.mytext.encode('utf-8').split())
-                    self.readingease()
-                    print '%s: %d' % (self.reference[0], self.myreadingease)
-                else:
-                    if self.passagereference[2] == '*':
-                        self.i = 1
-                        for verse in verselist:
-                            self.myverse = verse.toxml()
-                            self.words_count = (word.strip(punctuation).lower() for word in self.myverse.encode('utf-8').split())
-                            self.readingease()
-                            print '%s.%s.%i: %d' % (self.passagereference[0], self.passagereference[1], self.i, self.myreadingease)
-                            self.i += 1
-                    else:
-                        passageverse = int(self.passagereference[2]) - 1
-                        self.myverse = verselist[passageverse]
-                        self.mywelements = self.myverse.getElementsByTagName('w')
-                        for el in self.mywelements:
-                            self.mytext += el.firstChild.data.encode('utf-8') + ' '
-                        self.words_count = (word.strip(punctuation).lower() for word in self.mytext.split())
-                        self.readingease()
-                        print '%s: %d' % (self.reference[0], self.myreadingease)
-        elif len(self.reference) == 2:  #<--to do
-                self.passagereference = str(self.reference[0]).split('.')
-                bookxml = minidom.parse('%s/%s.xml' % (self.bookdir, self.passagereference[0].strip()))
-                chapterlist = bookxml.getElementsByTagName('chapter')
-                passagechapter = int(self.passagereference[1]) - 1
-                chapterxml = chapterlist[passagechapter]
-                verselist = chapterxml.getElementsByTagName('verse')
-                if len(self.passagereference) == 2:
-                    self.mytext = ''
-                    for verse in verselist:
-                        myverse = verse.toxml()
-                        self.mytext += myverse
-                    self.words_count = (word.strip(punctuation).lower() for word in self.mytext.encode('latin-1').split())
-                else:
-                    passageverse = int(self.passagereference[2]) - 1
-                    self.mytext = verselist[passageverse]
-                    self.words_count = (word.strip(punctuation).lower() for word in self.mytext.toxml().encode('latin-1').split())
-                self.readingease()
-                print '%s: %d' % (self.reference[0], self.myreadingease)
-    def allversesinchapter(self):
-        self.passagereference = str(self.reference[0]).split('.')
-        bookxml = minidom.parse('%s/%s.xml' % (self.bookdir, self.passagereference[0].strip()))
-        chapterlist = bookxml.getElementsByTagName('chapter')
-        passagechapter = int(self.passagereference[1]) - 1
-        chapterxml = chapterlist[passagechapter]
-        verselist = chapterxml.getElementsByTagName('verse')
-        for verse in verselist:
-            self.myverse = verse.toxml()
-            self.words_count = (word.strip(punctuation).lower() for word in self.myverse.encode('utf-8').split())
-            self.readingease()
-            print '%s: %d' % (self.reference[0], self.myreadingease)
+                self.v = 1
+                self.myc = []
+                for verse in verselist:
+                    self.ref = verse.attributes['osisID'].value.encode('utf-8').split('.')
+                    self.mywelements = verse.childNodes
+                    self.myv = []
+                    for el in self.mywelements:
+                        try:
+                            if el.tagName == 'w':
+                                self.myv.append(self.normalize(el.firstChild.data).encode('utf-8'))
+                                self.myc.append(self.normalize(el.firstChild.data).encode('utf-8'))
+                                self.myb.append(self.normalize(el.firstChild.data).encode('utf-8'))
+                            elif el.tagName == 'note':
+                                self.noteelements = el.childNodes
+                                for nel in self.noteelements:
+                                    if nel.tagName == 'rdg':
+                                        if nel.attributes['type'] == 'x-qere':
+                                            self.myv.pop(-1)
+                                            self.myv.append(self.normalize(nel.childNodes[0].firstChild.data).encode('utf-8'))
+                                            self.myc.pop(-1)
+                                            self.myc.append(self.normalize(nel.childNodes[0].firstChild.data).encode('utf-8'))
+                                            self.myb.pop(-1)
+                                            self.myb.append(self.normalize(nel.childNodes[0].firstChild.data).encode('utf-8'))
+                                        else: pass
+                                    else: pass
+                            else: pass
+                        except AttributeError: pass
+                    self.readingease(self.myv)
+                    #hrelist.append([self.myreadingease, self.myharmonicease, self.book, self.c, self.v])
+                    print >> self.href, '%d, %d, %s.%s.%i' % (self.myreadingease, \
+                        self.myharmonicease, self.book, self.c, self.v)
+                    self.v += 1
+                self.readingease(self.myc)
+                #hrelist.append([self.myreadingease, self.myharmonicease, self.book, self.c])
+                print >> self.href, '%d, %d, %s.%s' % (self.myreadingease, \
+                    self.myharmonicease, self.book, self.c)
+                self.c += 1
+            self.readingease(self.myb)
+            #hrelist.append([self.myreadingease, self.myharmonicease, self.book])
+            print >> self.href, '%d, %d, %s' % (self.myreadingease, \
+                self.myharmonicease, self.book)
+        self.href.close()
+        #hresorted = sorted(hrelist, key=itemgetter(3), reverse=True)
+        #f = open('/home/jkag/Desktop/test.txt', 'w')
+        #for item in hresorted:
+        #    hreform.append(','.join(item))
+        #f.write('\n'.join(hreform))
+        #f.close()
     def readingease(self, passage):
-        'Rate the reading ease of the text based on the frequency list'
+        'Generate the reading ease of the text based on the frequency list'
         self.numofwords = Decimal('0')
         self.freqsum = Decimal('0')
         self.harmonic = Decimal('0')
