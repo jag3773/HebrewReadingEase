@@ -121,8 +121,6 @@ class ReadingEase():
 
   def rate(self):
     print "Rating..."
-    #hrelist = []
-    #hreform = []
     self.href = open(self.hrefile, 'w')
     for self.book in self.books:
       print self.book
@@ -167,26 +165,17 @@ class ReadingEase():
               else: pass
             except AttributeError: pass
           self.readingease(self.myv)
-          #hrelist.append([self.myreadingease, self.myharmonicease, self.book, self.c, self.v])
           print >> self.href, '%d, %d, %s.%s.%i' % (self.myreadingease,
             self.myharmonicease, self.book, self.c, self.v)
           self.v += 1
         self.readingease(self.myc)
-        #hrelist.append([self.myreadingease, self.myharmonicease, self.book, self.c])
         print >> self.href, '%d, %d, %s.%s' % (self.myreadingease,
           self.myharmonicease, self.book, self.c)
         self.c += 1
       self.readingease(self.myb)
-      #hrelist.append([self.myreadingease, self.myharmonicease, self.book])
       print >> self.href, '%d, %d, %s' % (self.myreadingease,
         self.myharmonicease, self.book)
     self.href.close()
-    #hresorted = sorted(hrelist, key=itemgetter(3), reverse=True)
-    #f = open('/home/jkag/Desktop/test.txt', 'w')
-    #for item in hresorted:
-    #  hreform.append(','.join(item))
-    #f.write('\n'.join(hreform))
-    #f.close()
 
   def readingease(self, passage):
     'Generate the reading ease of the text based on the frequency list'
