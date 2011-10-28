@@ -1,11 +1,16 @@
-The Hebrew Reading Ease is a scale based on word frequencyfor biblical Hebrew.  The script iterates through the Hebrew Bible and generates a frequency index of each word that occurs.  Then, the script works back through the text and generates two difficulty averages for each passage.
+The Hebrew Reading Ease is a scale based on word frequencyfor biblical Hebrew.
+The script iterates through the Hebrew Bible and generates a frequency index
+of each word that occurs.  Then, the script works back through the text and
+generates two difficulty averages for each passage.
 
-The script will rate the whole Hebrew Bible and output a file called hre.txt that contains the averages for each verse, chapter, and book.
+The script will rate the whole Hebrew Bible and output a file called hre.txt
+that contains the averages for each verse, chapter, and book.
 
-The script relies on the xml files of the Open Scriptures MorphHB project found here:
-http://github.com/openscriptures/morphhb.
+The script relies on the xml files of the Open Scriptures MorphHB project found
+here: http://github.com/openscriptures/morphhb.
 
 See this Google Doc for an abstract of the idea:
 https://docs.google.com/fileview?id=0B_-YFDU1CQhbN2VhMTFhOWItMDQ4Zi00NmYzLThiMWMtNjM5OTUxMDExYzNi&hl=en
 
-See http://www.ekfocus.com/hebrew/hebrew-reading-ease for the most up to date information on the entire research project.
+See http://www.ekfocus.com/hebrew/hebrew-reading-ease for the most up to date
+information on the entire research project.

@@ -31,18 +31,19 @@ import sys
 
 ####################
 class ReadingEase():
+
   def __init__(self):
     self.reference = sys.argv[1:]
-    self.bookdir = './wlc'
+    self.bookdir = '../morphhb/wlc'
     books = os.listdir(self.bookdir)
     self.listdir = './lists'
     self.biblefile = 'HebrewBible.txt'
     self.biblefreqlistfile = 'HebrewBible-FrequencyList.txt'
     self.hrefile = 'hre.txt'
     self.N = 113000
-    self.books = ["Gen","Exod","Lev","Num", "Deut", "Josh", "Judg", "Ruth","1Sam",
-      "2Sam","1Kgs","2Kgs","1Chr", "2Chr","Ezra","Neh","Esth","Job","Ps",
-      "Prov","Eccl","Song","Isa","Jer","Lam","Ezek","Dan","Hos","Joel",
+    self.books = ["Gen","Exod","Lev","Num", "Deut", "Josh", "Judg", "Ruth",
+      "1Sam","2Sam","1Kgs","2Kgs","1Chr", "2Chr","Ezra","Neh","Esth","Job",
+      "Ps","Prov","Eccl","Song","Isa","Jer","Lam","Ezek","Dan","Hos","Joel",
       "Amos","Obad","Jonah","Mic","Nah","Hab","Zeph","Hag","Zech","Mal"]
     self.cantillation = [u'\u0590',u'\u0591',u'\u0592',u'\u0593',u'\u0594',u'\u0595',
           u'\u0596',u'\u0597',u'\u0598',u'\u0599',u'\u059A',u'\u059B',
@@ -70,20 +71,23 @@ class ReadingEase():
           chapterxml = chapterlist[self.c - 1]
           verselist = chapterxml.getElementsByTagName('verse')
           for verse in verselist:
-            self.ref = verse.attributes['osisID'].value.encode('utf-8').split('.')
+            self.ref = ( verse.attributes['osisID'].value.encode('utf-8')
+                       .split('.') )
             self.mywelements = verse.childNodes
             self.mytext = []
             for el in self.mywelements:
               try:
                 if el.tagName == 'w':
-                  self.mytext.append(self.normalize(el.firstChild.data).encode('utf-8'))
+                  self.mytext.append(self.normalize(el.firstChild.data)
+                      .encode('utf-8'))
                 elif el.tagName == 'note':
                   self.noteelements = el.childNodes
                   for nel in self.noteelements:
                     if nel.tagName == 'rdg':
                       if nel.attributes['type'] == 'x-qere':
                         self.mytext.pop(-1)
-                        self.mytext.append(self.normalize(nel.childNodes[0].firstChild.data).encode('utf-8'))
+                        self.mytext.append(self.normalize(nel.childNodes[0]
+                                   .firstChild.data).encode('utf-8'))
                       else: pass
                     else: pass
                 else: pass
@@ -105,7 +109,8 @@ class ReadingEase():
       self.words_gen = (line.strip().lower() for line in open(self.biblefile))
       for word in self.words_gen:
         self.words[word] = self.words.get(word, 0) + 1
-      self.top_words = sorted(self.words.iteritems(), key=itemgetter(1), reverse=True)[:self.N]
+      self.top_words = sorted(self.words.iteritems(), key=itemgetter(1),
+                                                   reverse=True)[:self.N]
       freqwords = open(self.biblefreqlistfile, 'a')
       for word, frequency in self.top_words:
         print >> freqwords, "'%s': %d," % (word, frequency)
@@ -137,37 +142,43 @@ class ReadingEase():
           for el in self.mywelements:
             try:
               if el.tagName == 'w':
-                self.myv.append(self.normalize(el.firstChild.data).encode('utf-8'))
-                self.myc.append(self.normalize(el.firstChild.data).encode('utf-8'))
-                self.myb.append(self.normalize(el.firstChild.data).encode('utf-8'))
+                self.myv.append(self.normalize(el.firstChild.data)
+                                                     .encode('utf-8'))
+                self.myc.append(self.normalize(el.firstChild.data)
+                                                     .encode('utf-8'))
+                self.myb.append(self.normalize(el.firstChild.data)
+                                                     .encode('utf-8'))
               elif el.tagName == 'note':
                 self.noteelements = el.childNodes
                 for nel in self.noteelements:
                   if nel.tagName == 'rdg':
                     if nel.attributes['type'] == 'x-qere':
                       self.myv.pop(-1)
-                      self.myv.append(self.normalize(nel.childNodes[0].firstChild.data).encode('utf-8'))
+                      self.myv.append(self.normalize(nel.childNodes[0]
+                                      .firstChild.data).encode('utf-8'))
                       self.myc.pop(-1)
-                      self.myc.append(self.normalize(nel.childNodes[0].firstChild.data).encode('utf-8'))
+                      self.myc.append(self.normalize(nel.childNodes[0]
+                                      .firstChild.data).encode('utf-8'))
                       self.myb.pop(-1)
-                      self.myb.append(self.normalize(nel.childNodes[0].firstChild.data).encode('utf-8'))
+                      self.myb.append(self.normalize(nel.childNodes[0]
+                                      .firstChild.data).encode('utf-8'))
                     else: pass
                   else: pass
               else: pass
             except AttributeError: pass
           self.readingease(self.myv)
           #hrelist.append([self.myreadingease, self.myharmonicease, self.book, self.c, self.v])
-          print >> self.href, '%d, %d, %s.%s.%i' % (self.myreadingease, \
+          print >> self.href, '%d, %d, %s.%s.%i' % (self.myreadingease,
             self.myharmonicease, self.book, self.c, self.v)
           self.v += 1
         self.readingease(self.myc)
         #hrelist.append([self.myreadingease, self.myharmonicease, self.book, self.c])
-        print >> self.href, '%d, %d, %s.%s' % (self.myreadingease, \
+        print >> self.href, '%d, %d, %s.%s' % (self.myreadingease,
           self.myharmonicease, self.book, self.c)
         self.c += 1
       self.readingease(self.myb)
       #hrelist.append([self.myreadingease, self.myharmonicease, self.book])
-      print >> self.href, '%d, %d, %s' % (self.myreadingease, \
+      print >> self.href, '%d, %d, %s' % (self.myreadingease,
         self.myharmonicease, self.book)
     self.href.close()
     #hresorted = sorted(hrelist, key=itemgetter(3), reverse=True)
